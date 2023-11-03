@@ -44,7 +44,7 @@ def generate_successors(current_state):
     return successors
 
 
-def bfs_8_puzzle(initial_state, goal_state):
+def bfs(initial_state, goal_state):
     queue = deque([(initial_state, [])])
     explored = set()
     while queue:
@@ -64,7 +64,7 @@ def bfs_8_puzzle(initial_state, goal_state):
     return None  # No solution found
 
 
-def ucs_8_puzzle(initial_state, goal_state):
+def ucs(initial_state, goal_state):
     open_set = PriorityQueue()
     open_set.put((0, initial_state, []))
     explored = set()
@@ -77,32 +77,39 @@ def ucs_8_puzzle(initial_state, goal_state):
 
         explored.add(tuple(map(tuple, current_state)))
 
-        empty_row, empty_col = None, None
-        for i in range(3):
-            for j in range(3):
-                if current_state[i][j] == 0:
-                    empty_row, empty_col = i, j
+        successors = generate_successors(current_state)
 
-        moves = [
-            (empty_row - 1, empty_col, "down"),
-            (empty_row + 1, empty_col, "up"),
-            (empty_row, empty_col - 1, "right"),
-            (empty_row, empty_col + 1, "left"),
-        ]
-
-        for row, col, move_direction in moves:
-            if 0 <= row < 3 and 0 <= col < 3:
-                new_state = [list(row) for row in current_state]
-                new_state[empty_row][empty_col], new_state[row][col] = new_state[row][col], new_state[empty_row][empty_col]
-                if tuple(map(tuple, new_state)) not in explored:
-                    priority = len(path)
-                    open_set.put(
-                        (priority, new_state, path + [move_direction]))
+        for next_state, move_direction in successors:
+            if tuple(map(tuple, next_state)) not in explored:
+                priority = len(path)
+                open_set.put(
+                    (priority, next_state, path + [move_direction]))
 
     return None  # No solution found
 
 
-def dfs_8_puzzle(initial_state, goal_state, max_depth=50):
+def dfs(initial_state, goal_state):
+    stack = [(initial_state, [])]
+    explored = set()
+
+    while stack:
+        current_state, path = stack.pop()
+
+        if current_state == goal_state:
+            return path
+
+        explored.add(tuple(map(tuple, current_state)))
+
+        # Assuming you have a generate_successors function
+        successors = generate_successors(current_state)
+
+        for next_state, move_direction in successors:
+            if tuple(map(tuple, next_state)) not in explored:
+                stack.append((next_state, path + [move_direction]))
+
+    return None
+
+def ids(initial_state, goal_state, max_depth=50):
     stack = [(initial_state, [])]
     explored = set()
 
@@ -127,8 +134,7 @@ def dfs_8_puzzle(initial_state, goal_state, max_depth=50):
 
     return None
 
-
-def greedy_best_first_search(initial_state, goal_state):
+def greedy(initial_state, goal_state):
     open_set = PriorityQueue()
     open_set.put((0, initial_state, []))
     explored = set()
@@ -141,64 +147,64 @@ def greedy_best_first_search(initial_state, goal_state):
 
         explored.add(tuple(map(tuple, current_state)))
 
-        empty_row, empty_col = None, None
-        for i in range(3):
-            for j in range(3):
-                if current_state[i][j] == 0:
-                    empty_row, empty_col = i, j
-        moves = [
-            (empty_row - 1, empty_col, "down"),
-            (empty_row + 1, empty_col, "up"),
-            (empty_row, empty_col - 1, "right"),
-            (empty_row, empty_col + 1, "left"),
-        ]
+        successors = generate_successors(current_state)
 
-        for row, col, move_direction in moves:
-            if 0 <= row < 3 and 0 <= col < 3:
-                new_state = [list(row) for row in current_state]
-                new_state[empty_row][empty_col], new_state[row][col] = new_state[row][col], new_state[empty_row][empty_col]
-                if tuple(map(tuple, new_state)) not in explored:
-                    # Greedy: Consider only the heuristic
-                    priority = manhattan_distance(new_state)
-                    open_set.put(
-                        (priority, new_state, path + [move_direction]))
+        for next_state, move_direction in successors:
+            if tuple(map(tuple, next_state)) not in explored:
+                priority = manhattan_distance(next_state)
+                open_set.put(
+                    (priority, next_state, path + [move_direction]))
 
     return None  # No solution found
 
 
-def a_star_search(initial_state, goal_state):
+def a_star(initial_state, goal_state):
     open_set = PriorityQueue()
     open_set.put((0, initial_state, []))
     explored = set()
-
     while not open_set.empty():
         _, current_state, path = open_set.get()
+        if current_state == goal_state:
+            return path
+        explored.add(tuple(map(tuple, current_state)))
+
+        successors = generate_successors(current_state)
+
+        for next_state, move_direction in successors:
+            if tuple(map(tuple, next_state)) not in explored:
+                priority = len(path) + manhattan_distance(next_state)
+                open_set.put(
+                    (priority, next_state, path + [move_direction]))
+
+    return None  # No solution found
+
+def hill_climbing(initial_state, goal_state):
+    stack = [(initial_state, [])]
+    explored = set()
+
+    while stack:
+        current_state, path = stack.pop()
 
         if current_state == goal_state:
             return path
 
         explored.add(tuple(map(tuple, current_state)))
 
-        empty_row, empty_col = None, None
-        for i in range(3):
-            for j in range(3):
-                if current_state[i][j] == 0:
-                    empty_row, empty_col = i, j
+        successors = generate_successors(current_state)
 
-        moves = [
-            (empty_row - 1, empty_col, "down"),
-            (empty_row + 1, empty_col, "up"),
-            (empty_row, empty_col - 1, "right"),
-            (empty_row, empty_col + 1, "left"),
-        ]
+        best_state = None
+        best_cnt_misplaced = float('inf')
+        best_move = None
 
-        for row, col, move_direction in moves:
-            if 0 <= row < 3 and 0 <= col < 3:
-                new_state = [list(row) for row in current_state]
-                new_state[empty_row][empty_col], new_state[row][col] = new_state[row][col], new_state[empty_row][empty_col]
-                if tuple(map(tuple, new_state)) not in explored:
-                    priority = len(path) + manhattan_distance(new_state)
-                    open_set.put(
-                        (priority, new_state, path + [move_direction]))
+        for next_state, move_direction in successors:
+            if tuple(map(tuple, next_state)) not in explored:
+                new_cnt_misplaced = manhattan_distance(next_state)
+                if new_cnt_misplaced < best_cnt_misplaced:
+                    best_state = next_state
+                    best_cnt_misplaced = new_cnt_misplaced
+                    best_move = move_direction
 
-    return None  # No solution found
+        if best_state is not None:
+            stack.append((best_state, path + [best_move]))
+
+    return None

@@ -18,10 +18,12 @@ class Game:
         self.shuffle_time = 0
         self.start_shuffle = False
         self.start_DFS = False
+        self.start_IDS = False
         self.start_BFS = False
         self.start_UCS = False
         self.start_A_STAR = False
         self.start_GREEDY = False
+        self.start_HILL = False
         self.previous_choice = ""
         self.start_game = False
         self.start_timer = False
@@ -142,35 +144,46 @@ class Game:
                         self.tiles[row].append(Tile(self, col, row, "empty"))
 
     def BFS(self):
-        solution_path = bfs_8_puzzle(self.initial_state, self.goal_state)
+        solution_path = bfs(self.initial_state, self.goal_state)
         print("step = ")
         print(len(solution_path))
         return solution_path
 
     def DFS(self):
-        solution_path = dfs_8_puzzle(self.initial_state, self.goal_state)
+        solution_path = dfs(self.initial_state, self.goal_state)
         if solution_path:
             print("step = ")
             print(len(solution_path))
         return solution_path
 
     def UCS(self):
-        solution_path = ucs_8_puzzle(self.initial_state, self.goal_state)
+        solution_path = ucs(self.initial_state, self.goal_state)
         print("step = ")
         print(len(solution_path))
         return solution_path
 
     def A_STAR(self):
-        goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
-        initial_state = [row[:] for row in self.tiles_grid]
-
-        solution_path = a_star_search(self.initial_state, self.goal_state)
+        solution_path = a_star(self.initial_state, self.goal_state)
         print("step = ")
         print(len(solution_path))
         return solution_path
 
     def GREEDY(self):
-        solution_path = greedy_best_first_search(
+        solution_path = greedy(
+            self.initial_state, self.goal_state)
+        print("step = ")
+        print(len(solution_path))
+        return solution_path
+    
+    def HILL(self):
+        solution_path = hill_climbing(
+            self.initial_state, self.goal_state)
+        print("step = ")
+        print(len(solution_path))
+        return solution_path
+    
+    def IDS(self):
+        solution_path = ids(
             self.initial_state, self.goal_state)
         print("step = ")
         print(len(solution_path))
@@ -189,7 +202,7 @@ class Game:
         self.goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
         self.initial_state = [row[:] for row in self.tiles_grid]
         self.multi_btn = MultiOptionButton(950, 170, 200, 50, [
-                                           "Algorithm", "BFS", "DFS", "UCS", "A_STAR", "GREEDY"], BLACK, WHITE)
+                                           "Algorithm", "BFS", "DFS", "IDS", "UCS", "A_STAR", "GREEDY","HILL CLIMBING"], BLACK, WHITE)
 
         self.buttons_list.append(
             Button(950, 25, 200, 50, "Shuffle", BLACK, WHITE))
@@ -304,7 +317,37 @@ class Game:
                 self.start_GREEDY = False
                 self.start_game = True
                 self.start_timer = True
+        if self.start_HILL:
+            solution_path = self.HILL()
 
+            if solution_path:
+                print("Solution Path:", solution_path)
+                for move in solution_path:
+                    self.move_tile(move)
+                self.start_HILL = False
+                self.start_game = True
+                self.start_timer = True
+            else:
+                print("No solution found")
+                self.start_HILL = False
+                self.start_game = True
+                self.start_timer = True
+        if self.start_IDS:
+            solution_path = self.IDS()
+
+            if solution_path:
+                print("Solution Path:", solution_path)
+                for move in solution_path:
+                    self.move_tile(move)
+                self.start_IDS = False
+                self.start_game = True
+                self.start_timer = True
+            else:
+                print("No solution found")
+                self.start_IDS = False
+                self.start_game = True
+                self.start_timer = True       
+                
         self.all_sprites.update()
 
     def draw_grid(self):
@@ -328,93 +371,6 @@ class Game:
         UIElement(430, 300, "High Score - %.3f" %
                   (self.high_score if self.high_score > 0 else 0)).draw(self.screen)
         pygame.display.flip()
-
-    def manhattan_distance(self, state):
-      # Calculate the Manhattan distance heuristic for a given state
-        distance = 0
-        for i in range(3):
-            for j in range(3):
-                if state[i][j] != 0:
-                    target_row = (state[i][j] - 1) // 3
-                    target_col = (state[i][j] - 1) % 3
-                    distance += abs(i - target_row) + abs(j - target_col)
-        return distance
-
-    def a_star_search(self, initial_state, goal_state):
-        open_set = PriorityQueue()
-        open_set.put((0, initial_state, []))
-        explored = set()
-
-        while not open_set.empty():
-            _, current_state, path = open_set.get()
-
-            if current_state == goal_state:
-                return path
-
-            explored.add(tuple(map(tuple, current_state)))
-
-            empty_row, empty_col = None, None
-            for i in range(3):
-                for j in range(3):
-                    if current_state[i][j] == 0:
-                        empty_row, empty_col = i, j
-
-            moves = [
-                (empty_row - 1, empty_col, "down"),
-                (empty_row + 1, empty_col, "up"),
-                (empty_row, empty_col - 1, "right"),
-                (empty_row, empty_col + 1, "left"),
-            ]
-
-            for row, col, move_direction in moves:
-                if 0 <= row < 3 and 0 <= col < 3:
-                    new_state = [list(row) for row in current_state]
-                    new_state[empty_row][empty_col], new_state[row][col] = new_state[row][col], new_state[empty_row][empty_col]
-                    if tuple(map(tuple, new_state)) not in explored:
-                        priority = len(path) + \
-                            self.manhattan_distance(new_state)
-                        open_set.put(
-                            (priority, new_state, path + [move_direction]))
-
-        return None  # No solution found
-
-    def greedy_best_first_search(self, initial_state, goal_state):
-        open_set = PriorityQueue()
-        open_set.put((0, initial_state, []))
-        explored = set()
-
-        while not open_set.empty():
-            _, current_state, path = open_set.get()
-
-            if current_state == goal_state:
-                return path
-
-            explored.add(tuple(map(tuple, current_state)))
-
-            empty_row, empty_col = None, None
-            for i in range(3):
-                for j in range(3):
-                    if current_state[i][j] == 0:
-                        empty_row, empty_col = i, j
-
-            moves = [
-                (empty_row - 1, empty_col, "down"),
-                (empty_row + 1, empty_col, "up"),
-                (empty_row, empty_col - 1, "right"),
-                (empty_row, empty_col + 1, "left"),
-            ]
-
-            for row, col, move_direction in moves:
-                if 0 <= row < 3 and 0 <= col < 3:
-                    new_state = [list(row) for row in current_state]
-                    new_state[empty_row][empty_col], new_state[row][col] = new_state[row][col], new_state[empty_row][empty_col]
-                    if tuple(map(tuple, new_state)) not in explored:
-                        # Greedy: Consider only the heuristic
-                        priority = self.manhattan_distance(new_state)
-                        open_set.put(
-                            (priority, new_state, path + [move_direction]))
-
-        return None  # No solution found
 
     def move_tile(self, path):
         initial_state = [row[:] for row in self.tiles_grid]
@@ -518,6 +474,9 @@ class Game:
                             elif self.selected_algo == "DFS":
                                 self.shuffle_time = 0
                                 self.start_DFS = True
+                            elif self.selected_algo == "IDS":
+                                self.shuffle_time = 0
+                                self.start_IDS = True
                             elif self.selected_algo == "UCS":
                                 self.shuffle_time = 0
                                 self.start_UCS = True
@@ -527,6 +486,9 @@ class Game:
                             elif self.selected_algo == "GREEDY":
                                 self.shuffle_time = 0
                                 self.start_GREEDY = True
+                            elif self.selected_algo == "HILL CLIMBING":
+                                self.shuffle_time = 0
+                                self.start_HILL = True
 
                         elif button.text == "Quit Game":
                             pygame.quit()
