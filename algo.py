@@ -173,8 +173,7 @@ def a_star(initial_state, goal_state):
         for next_state, move_direction in successors:
             if tuple(map(tuple, next_state)) not in explored:
                 priority = len(path) + manhattan_distance(next_state)
-                open_set.put(
-                    (priority, next_state, path + [move_direction]))
+                open_set.put((priority, next_state, path + [move_direction]))
 
     return None  # No solution found
 
