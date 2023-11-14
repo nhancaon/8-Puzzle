@@ -26,10 +26,6 @@ button1 = Button('Play',200,40,(SCREEN_WIDTH / 2 - 100,200),5)
 button2 = Button('Guide',200,40,(SCREEN_WIDTH / 2 - 100,250),5)
 button3 = Button('Exit',200,40,(SCREEN_WIDTH / 2 - 100,300),5)
 
-#button direct
-def click():
-    pass
-
 #game loop
 run = True
 while run:

@@ -1,12 +1,18 @@
 import pygame
 import random
 import time
+
 from sprite import *
 from settings import *
 from algo import *
-import tkinter as tk
-from tkinter import filedialog
+from split_img import *
+from hover import *
 
+# import tkinter as tk
+# from tkinter import filedialog
+
+# block open Add image many times
+icheck = 0
 
 class Game:
     def __init__(self):
@@ -32,29 +38,31 @@ class Game:
         self.pieces = []
         self.start_add_image = False
         self.show_number = True
-        self.selected_algo = None
+        multi = None
 
-    def choose_image(self):
-        root = tk.Tk()
-        root.withdraw()  # Hide the main tkinter window
-        file_path = filedialog.askopenfilename(
-            filetypes=[("Image files", "*.png *.jpg *.jpeg *.bmp *.gif")])
-        return file_path
+#region Old image handle
+    # def choose_image(self):
+    #     root = tk.Tk()
+    #     root.withdraw()  # Hide the main tkinter window
+    #     file_path = filedialog.askopenfilename(
+    #         filetypes=[("Image files", "*.png *.jpg *.jpeg *.bmp *.gif")])
+    #     return file_path
 
-    def cut_image_into_pieces(self, image, rows, columns):
-        piece_width = 128*3 // columns
-        piece_height = 128*3 // rows
-        pieces = []
+    # def cut_image_into_pieces(self, image, rows, columns):
+    #     piece_width = 128*3 // columns
+    #     piece_height = 128*3 // rows
+    #     pieces = []
 
-        for y in range(rows):
-            for x in range(columns):
-                left = x * piece_width
-                top = y * piece_height
-                piece = image.subsurface(pygame.Rect(
-                    left, top, piece_width, piece_height))
-                pieces.append(piece)
+    #     for y in range(rows):
+    #         for x in range(columns):
+    #             left = x * piece_width
+    #             top = y * piece_height
+    #             piece = image.subsurface(pygame.Rect(left, top, piece_width, piece_height))
+    #             pieces.append(piece)
 
-        return pieces
+    #     return pieces
+
+#endregion
 
     def get_high_scores(self):
         with open("high_score.txt", "r") as file:
@@ -66,8 +74,7 @@ class Game:
             file.write(str("%.3f\n" % self.high_score))
 
     def create_game(self):
-        grid = [
-            [x + y * GAME_SIZE for x in range(1, GAME_SIZE + 1)] for y in range(GAME_SIZE)]
+        grid = [[x + y * GAME_SIZE for x in range(1, GAME_SIZE + 1)] for y in range(GAME_SIZE)]
         grid[-1][-1] = 0
         return grid
 
@@ -89,17 +96,13 @@ class Game:
                 break
 
         if self.previous_choice == "right":
-            possible_moves.remove(
-                "left") if "left" in possible_moves else possible_moves
+            possible_moves.remove("left") if "left" in possible_moves else possible_moves
         elif self.previous_choice == "left":
-            possible_moves.remove(
-                "right") if "right" in possible_moves else possible_moves
+            possible_moves.remove("right") if "right" in possible_moves else possible_moves
         elif self.previous_choice == "up":
-            possible_moves.remove(
-                "down") if "down" in possible_moves else possible_moves
+            possible_moves.remove("down") if "down" in possible_moves else possible_moves
         elif self.previous_choice == "down":
-            possible_moves.remove(
-                "up") if "up" in possible_moves else possible_moves
+            possible_moves.remove("up") if "up" in possible_moves else possible_moves
 
         choice = random.choice(possible_moves)
         self.previous_choice = choice
@@ -116,33 +119,7 @@ class Game:
             self.tiles_grid[row][col], self.tiles_grid[row + 1][col] = self.tiles_grid[row + 1][col], \
                 self.tiles_grid[row][col]
 
-    def draw_tiles(self):
-        self.tiles = []
-        if self.start_add_image:
-            for row, x in enumerate(self.tiles_grid):
-                self.tiles.append([])
-                for col, tile in enumerate(x):
-                    i = tile
-                    if i == 0:
-                        i = 8
-                    else:
-                        i -= 1
-                    if tile != 0:
-                        self.tiles[row].append(
-                            Tile(self, col, row, None, self.pieces[i]))
-                    else:
-                        self.tiles[row].append(
-                            Tile(self, col, row, "empty", self.pieces[i]))
-
-        else:
-            for row, x in enumerate(self.tiles_grid):
-                self.tiles.append([])
-                for col, tile in enumerate(x):
-                    if tile != 0:
-                        self.tiles[row].append(Tile(self, col, row, str(tile)))
-                    else:
-                        self.tiles[row].append(Tile(self, col, row, "empty"))
-
+    #region Algorithms
     def BFS(self):
         solution_path = bfs(self.initial_state, self.goal_state)
         print("step = ")
@@ -154,6 +131,13 @@ class Game:
         if solution_path:
             print("step = ")
             print(len(solution_path))
+        return solution_path
+
+    def IDS(self):
+        solution_path = ids(
+            self.initial_state, self.goal_state)
+        print("step = ")
+        print(len(solution_path))
         return solution_path
 
     def UCS(self):
@@ -181,13 +165,7 @@ class Game:
         print("step = ")
         print(len(solution_path))
         return solution_path
-    
-    def IDS(self):
-        solution_path = ids(
-            self.initial_state, self.goal_state)
-        print("step = ")
-        print(len(solution_path))
-        return solution_path
+    #endregion
 
     def new(self):
         self.all_sprites = pygame.sprite.Group()
@@ -197,25 +175,22 @@ class Game:
         self.elapsed_time = 0
         self.start_timer = False
         self.start_game = False
-        self.buttons_list = []
+        # self.buttons_list = []
         self.picture_list = []
         self.goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
         self.initial_state = [row[:] for row in self.tiles_grid]
-        self.multi_btn = MultiOptionButton(950, 170, 200, 50, [
-                                           "Algorithm", "BFS", "DFS", "IDS", "UCS", "A_STAR", "GREEDY","HILL CLIMBING"], BLACK, WHITE)
 
-        self.buttons_list.append(
-            Button(950, 25, 200, 50, "Shuffle", BLACK, WHITE))
-        self.buttons_list.append(
-            Button(700, 170, 200, 50, "Reset", BLACK, WHITE))
-        self.buttons_list.append(
-            Button(900, 640, 200, 50, "Quit Game", BLACK, WHITE))
-        self.buttons_list.append(
-            Button(700, 100, 200, 50, "Add image", BLACK, WHITE))
-        self.buttons_list.append(
-            Button(700, 25, 200, 50, "Clear image", BLACK, WHITE))
-        self.buttons_list.append(
-            Button(1000, 100, 100, 50, "SOLVE", BLACK, WHITE))
+        #region Button creation
+        button4 = Button("Clear image",200,50,(700,25),5)
+        button5 = Button("Add image",200,50,(700,100),5)
+        button6 = Button("Reset",200,50,(700,170),5)
+        button7 = Button("Shuffle",200,50,(950,25),5)
+        button8 = Button("SOLVE",100,50,(1000,100),5)
+        button9 = Button("Quit Game",200,50,(900,640),5)
+
+        name_button = ["BFS", "DFS", "IDS", "UCS", "A_STAR", "GREEDY","HILL CLIMBING"]
+        multi_btn = MultiOptionButton(name_button, "Algorithm", 200, 50, (950, 170), 5)
+        #endregion
 
         self.draw_tiles()
 
@@ -352,25 +327,50 @@ class Game:
 
     def draw_grid(self):
         for row in range(-1, GAME_SIZE * TILESIZE, TILESIZE):
-            pygame.draw.line(self.screen, LIGHTGREY, (row, 0),
-                             (row, GAME_SIZE * TILESIZE))
+            pygame.draw.line(self.screen, LIGHTGREY, (row, 0), (row, GAME_SIZE * TILESIZE))
         for col in range(-1, GAME_SIZE * TILESIZE, TILESIZE):
-            pygame.draw.line(self.screen, LIGHTGREY, (0, col),
-                             (GAME_SIZE * TILESIZE, col))
+            pygame.draw.line(self.screen, LIGHTGREY, (0, col), (GAME_SIZE * TILESIZE, col))
 
     def draw(self):
-        self.screen.fill(BGCOLOUR)
+        #set background
+        bg = pygame.image.load("images/bgmain.jpg").convert()
+        self.screen.blit(bg,(0,0))
+
+        #draw buttons
+        buttons_draw()
+
         self.all_sprites.draw(self.screen)
         self.draw_grid()
-        for button in self.buttons_list:
-            button.draw(self.screen)
         for pic in self.picture_list:
             pic.draw(self.screen)
-        self.multi_btn.draw(self.screen)
         UIElement(550, 35, "%.3f" % self.elapsed_time).draw(self.screen)
-        UIElement(430, 300, "High Score - %.3f" %
-                  (self.high_score if self.high_score > 0 else 0)).draw(self.screen)
+        UIElement(430, 300, "High Score - %.3f" % (self.high_score if self.high_score > 0 else 0)).draw(self.screen)
         pygame.display.flip()
+
+    def draw_tiles(self):
+        self.tiles = []
+        if self.start_add_image:
+            for row, x in enumerate(self.tiles_grid):
+                self.tiles.append([])
+                for col, tile in enumerate(x):
+                    i = tile
+                    if i == 0:
+                        i = 8
+                    else:
+                        i -= 1
+                    if tile != 0:
+                        self.tiles[row].append(Tile(self, col, row, None, self.pieces[i]))
+                    else:
+                        self.tiles[row].append(Tile(self, col, row, "empty", self.pieces[i]))
+
+        else:
+            for row, x in enumerate(self.tiles_grid):
+                self.tiles.append([])
+                for col, tile in enumerate(x):
+                    if tile != 0:
+                        self.tiles[row].append(Tile(self, col, row, str(tile)))
+                    else:
+                        self.tiles[row].append(Tile(self, col, row, "empty"))
 
     def move_tile(self, path):
         initial_state = [row[:] for row in self.tiles_grid]
@@ -381,23 +381,19 @@ class Game:
                 if initial_state[i][j] == 0:
                     row, col = i, j
         if path == "down":
-            self.tiles_grid[row][col], self.tiles_grid[row -
-                                                       1][col] = self.tiles_grid[row - 1][col], self.tiles_grid[row][col]
+            self.tiles_grid[row][col], self.tiles_grid[row - 1][col] = self.tiles_grid[row - 1][col], self.tiles_grid[row][col]
             print(" move down")
 
         elif path == "up":
-            self.tiles_grid[row][col], self.tiles_grid[row +
-                                                       1][col] = self.tiles_grid[row + 1][col], self.tiles_grid[row][col]
+            self.tiles_grid[row][col], self.tiles_grid[row + 1][col] = self.tiles_grid[row + 1][col], self.tiles_grid[row][col]
             print(" move up")
 
         elif path == "right":
-            self.tiles_grid[row][col], self.tiles_grid[row][col -
-                                                            1] = self.tiles_grid[row][col - 1], self.tiles_grid[row][col]
+            self.tiles_grid[row][col], self.tiles_grid[row][col - 1] = self.tiles_grid[row][col - 1], self.tiles_grid[row][col]
             print(" move right")
 
         elif path == "left":
-            self.tiles_grid[row][col], self.tiles_grid[row][col +
-                                                            1] = self.tiles_grid[row][col + 1], self.tiles_grid[row][col]
+            self.tiles_grid[row][col], self.tiles_grid[row][col + 1] = self.tiles_grid[row][col + 1], self.tiles_grid[row][col]
             print(" move left")
 
         else:
@@ -407,7 +403,16 @@ class Game:
         self.all_sprites.update()
         pygame.time.delay(350)
 
+    def return_picture_list(self):
+        # Use a list comprehension to filter files with .png extension
+        directory_path = "D:/UNIVERSITY/3rd/Semester 1/Artificial Intelligence/FINAL PROJECT/8-Puzzle/output_images/"
+        picture_list_save = [f"output_images/{file}" for file in os.listdir(directory_path) if file.endswith(f".jpg")]
+        return picture_list_save
+
     def events(self):
+        global output_images_path
+        output_images_path = 'output_images/'
+        
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -419,80 +424,87 @@ class Game:
                     for col, tile in enumerate(tiles):
                         if tile.click(mouse_x, mouse_y):
                             if tile.right() and self.tiles_grid[row][col + 1] == 0:
-                                self.tiles_grid[row][col], self.tiles_grid[row][col +
-                                                                                1] = self.tiles_grid[row][col + 1], self.tiles_grid[row][col]
+                                self.tiles_grid[row][col], self.tiles_grid[row][col + 1] = self.tiles_grid[row][col + 1], self.tiles_grid[row][col]
 
                             if tile.left() and self.tiles_grid[row][col - 1] == 0:
-                                self.tiles_grid[row][col], self.tiles_grid[row][col -
-                                                                                1] = self.tiles_grid[row][col - 1], self.tiles_grid[row][col]
+                                self.tiles_grid[row][col], self.tiles_grid[row][col - 1] = self.tiles_grid[row][col - 1], self.tiles_grid[row][col]
 
                             if tile.up() and self.tiles_grid[row - 1][col] == 0:
-                                self.tiles_grid[row][col], self.tiles_grid[row -
-                                                                           1][col] = self.tiles_grid[row - 1][col], self.tiles_grid[row][col]
+                                self.tiles_grid[row][col], self.tiles_grid[row - 1][col] = self.tiles_grid[row - 1][col], self.tiles_grid[row][col]
 
                             if tile.down() and self.tiles_grid[row + 1][col] == 0:
-                                self.tiles_grid[row][col], self.tiles_grid[row +
-                                                                           1][col] = self.tiles_grid[row + 1][col], self.tiles_grid[row][col]
+                                self.tiles_grid[row][col], self.tiles_grid[row + 1][col] = self.tiles_grid[row + 1][col], self.tiles_grid[row][col]
 
                             self.draw_tiles()
-                if self.multi_btn.click(mouse_x, mouse_y):
-                    self.selected_algo = self.multi_btn.text
-                for button in self.buttons_list:
-                    if button.click(mouse_x, mouse_y):
-                        if button.text == "Shuffle":
-                            self.shuffle_time = 0
-                            self.start_shuffle = True
-                        if button.text == "Reset":
-                            self.new()
-                        if button.text == "Add image":
-                            selected_image_path = self.choose_image()
-                            self.start_add_image = True
-                            if selected_image_path:
-                                selected_image = pygame.image.load(
-                                    selected_image_path)
-                                new_image = pygame.image.load(
-                                    selected_image_path)
-                                my_picture = Picture(
-                                    100, 570, 384, 384, new_image)
-                                my_picture.resize()
-                                self.picture_list.append(my_picture)
-                                self.pieces = self.cut_image_into_pieces(
-                                    selected_image, 3, 3)
-                                self.draw_tiles()
 
-                        if button.text == "Clear image":
-                            self.picture_list = []
-                            self.start_add_image = False
-                            self.show_number = True
-                            self.draw_tiles()
-                        if button.text == "SOLVE":
-                            self.initial_state = [row[:]
-                                                  for row in self.tiles_grid]
-                            if self.selected_algo == "BFS":
-                                self.shuffle_time = 0
-                                self.start_BFS = True
-                            elif self.selected_algo == "DFS":
-                                self.shuffle_time = 0
-                                self.start_DFS = True
-                            elif self.selected_algo == "IDS":
-                                self.shuffle_time = 0
-                                self.start_IDS = True
-                            elif self.selected_algo == "UCS":
-                                self.shuffle_time = 0
-                                self.start_UCS = True
-                            elif self.selected_algo == "A_STAR":
-                                self.shuffle_time = 0
-                                self.start_A_STAR = True
-                            elif self.selected_algo == "GREEDY":
-                                self.shuffle_time = 0
-                                self.start_GREEDY = True
-                            elif self.selected_algo == "HILL CLIMBING":
-                                self.shuffle_time = 0
-                                self.start_HILL = True
+        global icheck #limit the auto press of button Add image avoid error
+        clicked_button_text = get_clicked_button_text()
+        multi = get_clicked_button_text_multi()
 
-                        elif button.text == "Quit Game":
-                            pygame.quit()
-                            quit(0)
+        if clicked_button_text == "Shuffle":
+            self.shuffle_time = 0
+            self.start_shuffle = True
+
+        if clicked_button_text == "Reset":
+            self.new()
+
+        if clicked_button_text == "Add image":
+            if icheck == 0:
+                icheck = 1
+                self.start_add_image = True
+                selected_image_path = split(self.start_add_image)
+                if self.start_add_image:  
+                    # Display the original image                     
+                    # new_image = pygame.image.load(path)
+                    # my_picture = Picture(100, 570, 384, 384, new_image)
+                    # my_picture.resize()                               
+                    # self.picture_list.append(my_picture)
+
+                    # Convert pictures to surfaces
+                    image_surfaces = self.return_picture_list()
+                    self.pieces = [pygame.image.load(image_path).convert_alpha() for image_path in image_surfaces]
+
+                    self.draw_tiles()
+
+        if clicked_button_text == "Clear image":
+            icheck = 0
+            self.picture_list = []
+            self.start_add_image = False
+            self.show_number = True
+            
+            # Delete images in folder output_images
+            delete_files_in_directory(output_images_path)
+
+            self.draw_tiles()
+
+        if clicked_button_text == "SOLVE":
+            self.initial_state = [row[:]for row in self.tiles_grid]
+            if multi == "BFS":
+                self.shuffle_time = 0
+                self.start_BFS = True
+            elif multi == "DFS":
+                self.shuffle_time = 0
+                self.start_DFS = True
+            elif multi == "IDS":
+                self.shuffle_time = 0
+                self.start_IDS = True
+            elif multi == "UCS":
+                self.shuffle_time = 0
+                self.start_UCS = True
+            elif multi == "A_STAR":
+                self.shuffle_time = 0
+                self.start_A_STAR = True
+            elif multi == "GREEDY":
+                self.shuffle_time = 0
+                self.start_GREEDY = True
+            elif multi == "HILL CLIMBING":
+                self.shuffle_time = 0
+                self.start_HILL = True
+
+        if clicked_button_text == "Quit Game":
+            delete_files_in_directory(output_images_path)
+            pygame.quit()
+            quit(0)
 
     def run(self):
         self.playing = True
@@ -501,9 +513,26 @@ class Game:
             self.events()
             self.update()
             self.draw()
+    
+def delete_files_in_directory(directory):
+    # Get the list of files in the directory
+    file_list = os.listdir(directory)
 
+    # Iterate over the files and delete each one
+    for file_name in file_list:
+        file_path = os.path.join(directory, file_name)
+        try:
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+                print(f"Deleted: {file_path}")
+            else:
+                print(f"Not a file: {file_path}")
+        except Exception as e:
+            print(f"Error deleting {file_path}: {e}")
 
 game = Game()
+
 while True:
     game.new()
     game.run()
+    delete_files_in_directory(output_images_path)
