@@ -1,6 +1,7 @@
 import pygame
 import random
 import time
+import os
 
 from sprite import *
 from settings import *
@@ -13,6 +14,8 @@ from hover import *
 
 # block open Add image many times
 icheck = 0
+
+os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 class Game:
     def __init__(self):
@@ -529,6 +532,7 @@ def delete_files_in_directory(directory):
                 print(f"Not a file: {file_path}")
         except Exception as e:
             print(f"Error deleting {file_path}: {e}")
+
 
 game = Game()
 
