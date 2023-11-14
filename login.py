@@ -1,5 +1,6 @@
 import pygame, sys
 import math
+import os
 from hover import *
 
 pygame.init()
@@ -26,9 +27,8 @@ button1 = Button('Play',200,40,(SCREEN_WIDTH / 2 - 100,200),5)
 button2 = Button('Guide',200,40,(SCREEN_WIDTH / 2 - 100,250),5)
 button3 = Button('Exit',200,40,(SCREEN_WIDTH / 2 - 100,300),5)
 
-#button direct
-def click():
-    pass
+#center screen
+os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 #game loop
 run = True
