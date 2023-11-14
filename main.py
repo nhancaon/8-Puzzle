@@ -20,7 +20,7 @@ os.environ['SDL_VIDEO_CENTERED'] = '1'
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
         self.step = ""
@@ -43,7 +43,7 @@ class Game:
         self.show_number = True
         multi = None
 
-#region Old image handle
+    #region Old image handle
     # def choose_image(self):
     #     root = tk.Tk()
     #     root.withdraw()  # Hide the main tkinter window
@@ -65,7 +65,7 @@ class Game:
 
     #     return pieces
 
-#endregion
+    #endregion
 
     def get_high_scores(self):
         with open("high_score.txt", "r") as file:
@@ -178,7 +178,6 @@ class Game:
         self.elapsed_time = 0
         self.start_timer = False
         self.start_game = False
-        # self.buttons_list = []
         self.picture_list = []
         self.goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
         self.initial_state = [row[:] for row in self.tiles_grid]
@@ -409,7 +408,9 @@ class Game:
     def return_picture_list(self):
         # Use a list comprehension to filter files with .png extension
         directory_path = "D:/UNIVERSITY/3rd/Semester 1/Artificial Intelligence/FINAL PROJECT/8-Puzzle/output_images/"
-        picture_list_save = [f"output_images/{file}" for file in os.listdir(directory_path) if file.endswith(f".jpg")]
+        valid_extensions = (".png", ".jpg", ".jpeg", ".bmp", ".gif")
+        picture_list_save = [f"output_images/{file}" for file in os.listdir(directory_path) 
+                             if any(file.lower().endswith(ext) for ext in valid_extensions)]
         return picture_list_save
 
     def events(self):
@@ -452,16 +453,17 @@ class Game:
             self.new()
 
         if clicked_button_text == "Add image":
+            delete_files_in_directory(output_images_path)
             if icheck == 0:
                 icheck = 1
                 self.start_add_image = True
-                selected_image_path = split(self.start_add_image)
+                split(self.start_add_image)
                 if self.start_add_image:  
                     # Display the original image                     
-                    # new_image = pygame.image.load(path)
-                    # my_picture = Picture(100, 570, 384, 384, new_image)
-                    # my_picture.resize()                               
-                    # self.picture_list.append(my_picture)
+                    new_image = pygame.image.load(origin_path())
+                    my_picture = Picture(0, SCREEN_HEIGHT - TILESIZE * 3, TILESIZE*3, TILESIZE*3, new_image)
+                    my_picture.resize()                               
+                    self.picture_list.append(my_picture)
 
                     # Convert pictures to surfaces
                     image_surfaces = self.return_picture_list()
@@ -505,7 +507,6 @@ class Game:
                 self.start_HILL = True
 
         if clicked_button_text == "Quit Game":
-            delete_files_in_directory(output_images_path)
             pygame.quit()
             quit(0)
 
@@ -539,4 +540,3 @@ game = Game()
 while True:
     game.new()
     game.run()
-    delete_files_in_directory(output_images_path)

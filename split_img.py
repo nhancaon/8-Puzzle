@@ -7,6 +7,7 @@ from tkinter import filedialog
 check = False
 
 def split(start_split):
+    global path_origin
     if start_split:
         try:
             #get image path
@@ -17,12 +18,13 @@ def split(start_split):
                 return file_path
 
             path = choose_image()
+            path_origin = path
             img = cv2.imread(path)
+
             # Use the os.path.basename() function to get the filename from the path
             file_name, file_tailname = os.path.splitext(os.path.basename(path))
 
-            piece_width, piece_height = 384, 384
-            img = cv2.resize(img, (piece_height, piece_width))
+            img = cv2.resize(img, (384, 384))
 
             grid_size = 3
 
@@ -41,7 +43,10 @@ def split(start_split):
                 for row in range(rows):
                     for col in range(cols):
                         subimg = np.flip(grid[c], axis =- 1)
-                        subimg_rgb = cv2.cvtColor(subimg, cv2.COLOR_BGR2RGB)
+                        subimg_rgb = cv2.cvtColor(subimg, cv2.COLOR_BGR2RGB)                      
+                        if c == 8:
+                            subimg_rgb = cv2.medianBlur(subimg_rgb, 5)
+
                         filename = os.path.join(output_dir, f"{file_name}{c}{file_tailname}")
                         cv2.imwrite(filename, subimg_rgb)
                         c += 1
@@ -51,7 +56,7 @@ def split(start_split):
             row, col = grid_size, grid_size
             grid, r, c = img_to_grid(img, row, col)
 
-            # Specify the directory where you want to save the subimages
+            # Specify the directory where you want to save the sub images
             output_directory = 'output_images'
             save_grid_images(grid, r, c, output_directory)
         
@@ -61,6 +66,9 @@ def split(start_split):
         except Exception as e:
             print(f"Error: {e}")
             return None
+
+def origin_path():
+    return path_origin
 
 
 
