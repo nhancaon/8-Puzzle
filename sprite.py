@@ -21,23 +21,22 @@ class Tile(pygame.sprite.Sprite):
                 draw_x = (TILESIZE / 2) - self.font_size[0] / 2
                 draw_y = (TILESIZE / 2) - self.font_size[1] / 2
                 self.image.blit(font_surface, (draw_x, draw_y))
-
             else:
                 self.image.fill(BGCOLOUR)
+
         else:
             if self.text == None:
                 self.image = image
-            elif self.text != "empty":
+            elif self.text == "empty":
                 self.font = pygame.font.SysFont("Consolas", 50)
                 font_surface = self.font.render(self.text, True, WHITE)
-
                 self.font_size = self.font.size(self.text)
                 draw_x = (TILESIZE / 2) - self.font_size[0] / 2
                 draw_y = (TILESIZE / 2) - self.font_size[1] / 2
                 self.image.blit(font_surface, (draw_x, draw_y))
                 self.image = image
-            else:
-                self.image.fill(BGCOLOUR)
+            # else:
+            #     self.image.fill(BGCOLOUR)
 
     def update(self):
         self.rect.x = self.x * TILESIZE
@@ -96,5 +95,5 @@ class Picture:
         screen.blit(self.image, self.rect)  # Blit the image onto the screen
 
     def resize(self):
-        self.image = pygame.transform.scale(self.image, (self.width/3, self.height/3))
-        self.width, self.height = self.width/3, self.width/3
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
+        self.width, self.height = self.width, self.width

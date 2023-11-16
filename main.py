@@ -20,7 +20,7 @@ os.environ['SDL_VIDEO_CENTERED'] = '1'
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption(title)
         self.clock = pygame.time.Clock()
         self.step = ""
@@ -453,7 +453,9 @@ class Game:
     def return_picture_list(self):
         # Use a list comprehension to filter files with .png extension
         directory_path = "D:/UNIVERSITY/3rd/Semester 1/Artificial Intelligence/FINAL PROJECT/8-Puzzle/output_images/"
-        picture_list_save = [f"output_images/{file}" for file in os.listdir(directory_path) if file.endswith(f".jpg")]
+        valid_extensions = (".png", ".jpg", ".jpeg", ".bmp", ".gif")
+        picture_list_save = [f"output_images/{file}" for file in os.listdir(directory_path) 
+                             if any(file.lower().endswith(ext) for ext in valid_extensions)]
         return picture_list_save
 
     def events(self):
@@ -515,10 +517,11 @@ class Game:
             self.draw_tiles()
 
         if clicked_button_text == "Add image":
+            delete_files_in_directory(output_images_path)
             if icheck == 0:
                 icheck = 1
                 self.start_add_image = True
-                selected_image_path = split(self.start_add_image)
+                split(self.start_add_image)
                 if self.start_add_image:  
                     # Convert pictures to surfaces
                     image_surfaces = self.return_picture_list()
@@ -558,7 +561,6 @@ class Game:
                 self.start_HILL = True
 
         if clicked_button_text == "Quit Game":
-            delete_files_in_directory(output_images_path)
             pygame.quit()
             quit(0)
 
@@ -592,4 +594,3 @@ game = Game()
 while True:
     game.new()
     game.run()
-    delete_files_in_directory(output_images_path)
