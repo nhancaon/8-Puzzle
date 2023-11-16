@@ -15,5 +15,5 @@ SCREEN_HEIGHT = 800
 FPS = 60
 title = "Sliding Puzzle Game"
 TILESIZE = 128
-GAME_SIZE = 3
-
+GAME_SIZE_X = 3
+GAME_SIZE_Y = 2

@@ -2,15 +2,15 @@ import pygame
 import random
 import time
 import os
+import copy
 
 from sprite import *
 from settings import *
 from algo import *
 from split_img import *
 from hover import *
-
-# import tkinter as tk
-# from tkinter import filedialog
+import tkinter as tk
+from tkinter import scrolledtext
 
 # block open Add image many times
 icheck = 0
@@ -40,32 +40,24 @@ class Game:
         self.high_score = float(self.get_high_scores()[0])
         self.pieces = []
         self.start_add_image = False
-        self.show_number = True
         multi = None
-
-    #region Old image handle
-    # def choose_image(self):
-    #     root = tk.Tk()
-    #     root.withdraw()  # Hide the main tkinter window
-    #     file_path = filedialog.askopenfilename(
-    #         filetypes=[("Image files", "*.png *.jpg *.jpeg *.bmp *.gif")])
-    #     return file_path
-
-    # def cut_image_into_pieces(self, image, rows, columns):
-    #     piece_width = 128*3 // columns
-    #     piece_height = 128*3 // rows
-    #     pieces = []
-
-    #     for y in range(rows):
-    #         for x in range(columns):
-    #             left = x * piece_width
-    #             top = y * piece_height
-    #             piece = image.subsurface(pygame.Rect(left, top, piece_width, piece_height))
-    #             pieces.append(piece)
-
-    #     return pieces
-
-    #endregion
+        self.problem = [[x + y * GAME_SIZE_X for x in range(1, GAME_SIZE_X + 1)] for y in range(GAME_SIZE_Y)]
+        self.problem[-1][-1] = 0
+        self.searched_state_bfs = [0]
+        self.searched_state_dfs = [0]
+        self.searched_state_ids = [0]
+        self.searched_state_ucs = [0]
+        self.searched_state_astar = [0]
+        self.searched_state_greedy = [0]
+        self.searched_state_hill = [0]
+        self.steps_bfs = 0
+        self.steps_dfs = 0
+        self.steps_ids = 0
+        self.steps_ucs = 0
+        self.steps_astar = 0
+        self.steps_greedy = 0
+        self.steps_hill = 0
+        self.moves = []
 
     def get_high_scores(self):
         with open("high_score.txt", "r") as file:
@@ -77,7 +69,7 @@ class Game:
             file.write(str("%.3f\n" % self.high_score))
 
     def create_game(self):
-        grid = [[x + y * GAME_SIZE for x in range(1, GAME_SIZE + 1)] for y in range(GAME_SIZE)]
+        grid = [[x + y * GAME_SIZE_X for x in range(1, GAME_SIZE_X + 1)] for y in range(GAME_SIZE_Y)]
         grid[-1][-1] = 0
         return grid
 
@@ -87,86 +79,86 @@ class Game:
             for col, tile in enumerate(tiles):
                 if tile.text == "empty":
                     if tile.right():
-                        possible_moves.append("right")
+                        possible_moves.append("R")
                     if tile.left():
-                        possible_moves.append("left")
+                        possible_moves.append("L")
                     if tile.up():
-                        possible_moves.append("up")
+                        possible_moves.append("U")
                     if tile.down():
-                        possible_moves.append("down")
+                        possible_moves.append("D")
                     break
             if len(possible_moves) > 0:
                 break
 
-        if self.previous_choice == "right":
-            possible_moves.remove("left") if "left" in possible_moves else possible_moves
-        elif self.previous_choice == "left":
-            possible_moves.remove("right") if "right" in possible_moves else possible_moves
-        elif self.previous_choice == "up":
-            possible_moves.remove("down") if "down" in possible_moves else possible_moves
-        elif self.previous_choice == "down":
-            possible_moves.remove("up") if "up" in possible_moves else possible_moves
+        if self.previous_choice == "R":
+            possible_moves.remove("L") if "L" in possible_moves else possible_moves
+        elif self.previous_choice == "L":
+            possible_moves.remove("R") if "R" in possible_moves else possible_moves
+        elif self.previous_choice == "U":
+            possible_moves.remove("D") if "D" in possible_moves else possible_moves
+        elif self.previous_choice == "D":
+            possible_moves.remove("U") if "U" in possible_moves else possible_moves
 
         choice = random.choice(possible_moves)
         self.previous_choice = choice
-        if choice == "right":
+        if choice == "R":
             self.tiles_grid[row][col], self.tiles_grid[row][col + 1] = self.tiles_grid[row][col + 1], \
                 self.tiles_grid[row][col]
-        elif choice == "left":
+        elif choice == "L":
             self.tiles_grid[row][col], self.tiles_grid[row][col - 1] = self.tiles_grid[row][col - 1], \
                 self.tiles_grid[row][col]
-        elif choice == "up":
+        elif choice == "U":
             self.tiles_grid[row][col], self.tiles_grid[row - 1][col] = self.tiles_grid[row - 1][col], \
                 self.tiles_grid[row][col]
-        elif choice == "down":
+        elif choice == "D":
             self.tiles_grid[row][col], self.tiles_grid[row + 1][col] = self.tiles_grid[row + 1][col], \
                 self.tiles_grid[row][col]
 
     #region Algorithms
     def BFS(self):
-        solution_path = bfs(self.initial_state, self.goal_state)
-        print("step = ")
-        print(len(solution_path))
+        solution_path = bfs(self.initial_state, self.goal_state,self.searched_state_bfs)
+        if solution_path:
+            self.steps_bfs = len(solution_path)
+        self.draw()
         return solution_path
 
     def DFS(self):
-        solution_path = dfs(self.initial_state, self.goal_state)
+        solution_path = dfs(self.initial_state, self.goal_state,self.searched_state_dfs)
         if solution_path:
-            print("step = ")
-            print(len(solution_path))
+            self.steps_dfs=len(solution_path)
         return solution_path
 
     def IDS(self):
         solution_path = ids(
-            self.initial_state, self.goal_state)
-        print("step = ")
-        print(len(solution_path))
+            self.initial_state, self.goal_state,self.searched_state_ids)
+        if solution_path:
+            self.steps_ids=len(solution_path)
         return solution_path
 
     def UCS(self):
-        solution_path = ucs(self.initial_state, self.goal_state)
-        print("step = ")
-        print(len(solution_path))
+        solution_path = ucs(self.initial_state, self.goal_state,self.searched_state_ucs)
+        if solution_path:
+            self.steps_ucs=len(solution_path)
         return solution_path
 
     def A_STAR(self):
-        solution_path = a_star(self.initial_state, self.goal_state)
-        print("step = ")
-        print(len(solution_path))
+        solution_path = a_star(self.initial_state, self.goal_state,self.searched_state_astar)
+        if solution_path:
+            self.steps_astar=len(solution_path)
         return solution_path
 
     def GREEDY(self):
         solution_path = greedy(
-            self.initial_state, self.goal_state)
-        print("step = ")
-        print(len(solution_path))
+            self.initial_state, self.goal_state,self.searched_state_greedy)
+        if solution_path:
+            self.steps_greedy=len(solution_path)
         return solution_path
     
     def HILL(self):
         solution_path = hill_climbing(
-            self.initial_state, self.goal_state)
-        print("step = ")
-        print(len(solution_path))
+            self.initial_state, self.goal_state,self.searched_state_hill)
+        if solution_path:
+            self.steps_hill=len(solution_path)
         return solution_path
     #endregion
 
@@ -179,8 +171,11 @@ class Game:
         self.start_timer = False
         self.start_game = False
         self.picture_list = []
-        self.goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
-        self.initial_state = [row[:] for row in self.tiles_grid]
+        self.size_x = len(self.tiles_grid)
+        self.size_y = len(self.tiles_grid[0])
+        self.goal_state = [[x + y * self.size_y for x in range(1, self.size_y + 1)] for y in range(self.size_x)]
+        self.goal_state[-1][-1] = 0
+        self.initial_state = copy.deepcopy(self.goal_state)
 
         #region Button creation
         button4 = Button("Clear image",200,50,(700,25),5)
@@ -188,7 +183,8 @@ class Game:
         button6 = Button("Reset",200,50,(700,170),5)
         button7 = Button("Shuffle",200,50,(950,25),5)
         button8 = Button("SOLVE",100,50,(1000,100),5)
-        button9 = Button("Quit Game",200,50,(900,640),5)
+        button9 = Button("Quit Game",200,50,(950,240),5)
+        button10 = Button("New Game",200,50,(700,240),5)
 
         name_button = ["BFS", "DFS", "IDS", "UCS", "A_STAR", "GREEDY","HILL CLIMBING"]
         multi_btn = MultiOptionButton(name_button, "Algorithm", 200, 50, (950, 170), 5)
@@ -219,11 +215,29 @@ class Game:
                 self.start_shuffle = False
                 self.start_game = True
                 self.start_timer = True
+                self.problem=copy.deepcopy(self.tiles_grid)
+                self.searched_state_bfs = [0]
+                self.searched_state_dfs = [0]
+                self.searched_state_ids = [0]
+                self.searched_state_ucs = [0]
+                self.searched_state_astar = [0]
+                self.searched_state_greedy = [0]
+                self.searched_state_hill = [0]
+                self.steps_bfs = 0
+                self.steps_dfs = 0
+                self.steps_ids = 0
+                self.steps_ucs = 0
+                self.steps_astar = 0
+                self.steps_greedy = 0
+                self.steps_hill = 0
+                self.moves = []
+                self.draw()
         if self.start_DFS:
             solution_path = self.DFS()
 
             if solution_path:
-                print("Solution Path:", solution_path)
+                self.moves=[]
+                self.moves=copy.deepcopy(solution_path)
                 for move in solution_path:
                     self.move_tile(move)
                 self.start_DFS = False
@@ -234,11 +248,11 @@ class Game:
                 self.start_DFS = False
                 self.start_game = True
                 self.start_timer = True
-        if self.start_BFS:
+        if self.start_BFS == True:
             solution_path = self.BFS()
-
             if solution_path:
-                print("Solution Path:", solution_path)
+                self.moves=[]
+                self.moves=copy.deepcopy(solution_path)
                 for move in solution_path:
                     self.move_tile(move)
                 self.start_BFS = False
@@ -253,7 +267,8 @@ class Game:
             solution_path = self.UCS()
 
             if solution_path:
-                print("Solution Path:", solution_path)
+                self.moves=[]
+                self.moves=copy.deepcopy(solution_path)
                 for move in solution_path:
                     self.move_tile(move)
                 self.start_UCS = False
@@ -268,7 +283,8 @@ class Game:
             solution_path = self.A_STAR()
 
             if solution_path:
-                print("Solution Path:", solution_path)
+                self.moves=[]
+                self.moves=copy.deepcopy(solution_path)
                 for move in solution_path:
                     self.move_tile(move)
                 self.start_A_STAR = False
@@ -280,10 +296,11 @@ class Game:
                 self.start_game = True
                 self.start_timer = True
         if self.start_GREEDY:
+            
             solution_path = self.GREEDY()
-
             if solution_path:
-                print("Solution Path:", solution_path)
+                self.moves=[]
+                self.moves=copy.deepcopy(solution_path)
                 for move in solution_path:
                     self.move_tile(move)
                 self.start_GREEDY = False
@@ -296,9 +313,10 @@ class Game:
                 self.start_timer = True
         if self.start_HILL:
             solution_path = self.HILL()
-
+            
             if solution_path:
-                print("Solution Path:", solution_path)
+                self.moves=[]
+                self.moves=copy.deepcopy(solution_path)
                 for move in solution_path:
                     self.move_tile(move)
                 self.start_HILL = False
@@ -313,7 +331,7 @@ class Game:
             solution_path = self.IDS()
 
             if solution_path:
-                print("Solution Path:", solution_path)
+                self.moves=copy.deepcopy(solution_path)
                 for move in solution_path:
                     self.move_tile(move)
                 self.start_IDS = False
@@ -323,15 +341,16 @@ class Game:
                 print("No solution found")
                 self.start_IDS = False
                 self.start_game = True
-                self.start_timer = True       
-                
+                self.start_timer = True            
         self.all_sprites.update()
 
     def draw_grid(self):
-        for row in range(-1, GAME_SIZE * TILESIZE, TILESIZE):
-            pygame.draw.line(self.screen, LIGHTGREY, (row, 0), (row, GAME_SIZE * TILESIZE))
-        for col in range(-1, GAME_SIZE * TILESIZE, TILESIZE):
-            pygame.draw.line(self.screen, LIGHTGREY, (0, col), (GAME_SIZE * TILESIZE, col))
+        for row in range(-1, GAME_SIZE_X * TILESIZE, TILESIZE):
+            pygame.draw.line(self.screen, LIGHTGREY, (row, 0),
+                             (row, GAME_SIZE_Y * TILESIZE))
+        for col in range(-1, GAME_SIZE_Y * TILESIZE, TILESIZE):
+            pygame.draw.line(self.screen, LIGHTGREY, (0, col),
+                             (GAME_SIZE_X * TILESIZE, col))
 
     def draw(self):
         #set background
@@ -347,7 +366,37 @@ class Game:
             pic.draw(self.screen)
         UIElement(550, 35, "%.3f" % self.elapsed_time).draw(self.screen)
         UIElement(430, 300, "High Score - %.3f" % (self.high_score if self.high_score > 0 else 0)).draw(self.screen)
+        UIElement(430, 350, "BFS Searched : %.0f" %
+                  (self.searched_state_bfs[0])).draw(self.screen)
+        UIElement(800, 350, "Steps : %.0f" %
+                  (self.steps_bfs)).draw(self.screen)
+        UIElement(430, 400, "DFS Searched : %.0f" %
+                  (self.searched_state_dfs[0])).draw(self.screen)
+        UIElement(800, 400, "Steps : %.0f" %
+                  (self.steps_dfs)).draw(self.screen)
+        UIElement(430, 450, "IDS Searched : %.0f" %
+                  (self.searched_state_ids[0])).draw(self.screen)
+        UIElement(800, 450, "Steps : %.0f" %
+                  (self.steps_ids)).draw(self.screen)
+        UIElement(430, 500, "UCS Searched : %.0f" %
+                  (self.searched_state_ucs[0])).draw(self.screen)
+        UIElement(800, 500, "Steps : %.0f" %
+                  (self.steps_ucs)).draw(self.screen)
+        UIElement(430, 550, "GREEDY Searched : %.0f" %
+                  (self.searched_state_greedy[0])).draw(self.screen)
+        UIElement(800, 550, "Steps : %.0f" %
+                  (self.steps_greedy)).draw(self.screen)
+        UIElement(430, 600, "A* Searched : %.0f" %
+                  (self.searched_state_astar[0])).draw(self.screen)
+        UIElement(800, 600, "Steps : %.0f" %
+                  (self.steps_astar)).draw(self.screen)
+        UIElement(430, 650, "Hill climbing Searched : %.0f" %
+                  (self.searched_state_hill[0])).draw(self.screen)
+        UIElement(950, 650, "Steps : %.0f" %
+                  (self.steps_hill)).draw(self.screen)
+        UIE(50, 450, self.moves).draw(self.screen)
         pygame.display.flip()
+    
 
     def draw_tiles(self):
         self.tiles = []
@@ -357,7 +406,7 @@ class Game:
                 for col, tile in enumerate(x):
                     i = tile
                     if i == 0:
-                        i = 8
+                        i = GAME_SIZE_X*GAME_SIZE_Y-1
                     else:
                         i -= 1
                     if tile != 0:
@@ -378,32 +427,28 @@ class Game:
         initial_state = [row[:] for row in self.tiles_grid]
         # Find the position of the empty tile (0)
         row, col = None, None
-        for i in range(3):
-            for j in range(3):
+        for i in range(GAME_SIZE_Y):
+            for j in range(GAME_SIZE_X):
                 if initial_state[i][j] == 0:
                     row, col = i, j
-        if path == "down":
+        if path == "D":
             self.tiles_grid[row][col], self.tiles_grid[row - 1][col] = self.tiles_grid[row - 1][col], self.tiles_grid[row][col]
-            print(" move down")
 
-        elif path == "up":
+        elif path == "U":
             self.tiles_grid[row][col], self.tiles_grid[row + 1][col] = self.tiles_grid[row + 1][col], self.tiles_grid[row][col]
-            print(" move up")
 
-        elif path == "right":
+        elif path == "R":
             self.tiles_grid[row][col], self.tiles_grid[row][col - 1] = self.tiles_grid[row][col - 1], self.tiles_grid[row][col]
-            print(" move right")
 
-        elif path == "left":
+        elif path == "L":
             self.tiles_grid[row][col], self.tiles_grid[row][col + 1] = self.tiles_grid[row][col + 1], self.tiles_grid[row][col]
-            print(" move left")
 
         else:
             print("Invalid move: Unknown direction")
         self.draw()
         self.draw_tiles()
         self.all_sprites.update()
-        pygame.time.delay(350)
+        pygame.time.delay(150)
 
     def return_picture_list(self):
         # Use a list comprehension to filter files with .png extension
@@ -449,8 +494,27 @@ class Game:
             self.shuffle_time = 0
             self.start_shuffle = True
 
-        if clicked_button_text == "Reset":
+        if clicked_button_text == "New Game":
             self.new()
+            self.searched_state_bfs = [0]
+            self.searched_state_dfs = [0]
+            self.searched_state_ids = [0]
+            self.searched_state_ucs = [0]
+            self.searched_state_astar = [0]
+            self.searched_state_greedy = [0]
+            self.searched_state_hill = [0]
+            self.steps_bfs = 0
+            self.steps_dfs = 0
+            self.steps_ids = 0
+            self.steps_ucs = 0
+            self.steps_astar = 0
+            self.steps_greedy = 0
+            self.steps_hill = 0
+            self.moves = []
+            
+        if clicked_button_text == "Reset":
+            self.tiles_grid=copy.deepcopy(self.problem)
+            self.draw_tiles()
 
         if clicked_button_text == "Add image":
             delete_files_in_directory(output_images_path)
@@ -459,12 +523,6 @@ class Game:
                 self.start_add_image = True
                 split(self.start_add_image)
                 if self.start_add_image:  
-                    # Display the original image                     
-                    new_image = pygame.image.load(origin_path())
-                    my_picture = Picture(0, SCREEN_HEIGHT - TILESIZE * 3, TILESIZE*3, TILESIZE*3, new_image)
-                    my_picture.resize()                               
-                    self.picture_list.append(my_picture)
-
                     # Convert pictures to surfaces
                     image_surfaces = self.return_picture_list()
                     self.pieces = [pygame.image.load(image_path).convert_alpha() for image_path in image_surfaces]
@@ -475,18 +533,14 @@ class Game:
             icheck = 0
             self.picture_list = []
             self.start_add_image = False
-            self.show_number = True
-            
             # Delete images in folder output_images
             delete_files_in_directory(output_images_path)
-
             self.draw_tiles()
-
         if clicked_button_text == "SOLVE":
-            self.initial_state = [row[:]for row in self.tiles_grid]
+            self.initial_state = copy.deepcopy(self.tiles_grid)
             if multi == "BFS":
                 self.shuffle_time = 0
-                self.start_BFS = True
+                self.start_BFS = True 
             elif multi == "DFS":
                 self.shuffle_time = 0
                 self.start_DFS = True

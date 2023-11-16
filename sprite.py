@@ -46,7 +46,7 @@ class Tile(pygame.sprite.Sprite):
         return self.rect.left <= mouse_x <= self.rect.right and self.rect.top <= mouse_y <= self.rect.bottom
 
     def right(self):
-        return self.rect.x + TILESIZE < GAME_SIZE * TILESIZE
+        return self.rect.x + TILESIZE < GAME_SIZE_X * TILESIZE
 
     def left(self):
         return self.rect.x - TILESIZE >= 0
@@ -55,7 +55,7 @@ class Tile(pygame.sprite.Sprite):
         return self.rect.y - TILESIZE >= 0
 
     def down(self):
-        return self.rect.y + TILESIZE < GAME_SIZE * TILESIZE
+        return self.rect.y + TILESIZE < GAME_SIZE_Y * TILESIZE
 
 class UIElement:
     def __init__(self, x, y, text):
@@ -66,6 +66,21 @@ class UIElement:
         font = pygame.font.SysFont("Consolas", 30)
         text = font.render(self.text, True, WHITE)
         screen.blit(text, (self.x, self.y))
+        
+class UIE:
+    def __init__(self, x, y, text_list):
+        self.x, self.y = x, y
+        self.text_list = text_list
+
+    def draw(self, screen):
+        font = pygame.font.SysFont("Consolas", 30)
+        x_offset = 0  # Initialize x_offset to control horizontal position
+
+        for text in self.text_list:
+            text_surface = font.render(text, True, WHITE)
+            text_rect = text_surface.get_rect(topleft=(self.x + x_offset, self.y))
+            screen.blit(text_surface, text_rect)
+            x_offset += text_rect.width  # Move the next text by the width of the current text
 
 class Picture:
     def __init__(self, x, y, width, height, image):

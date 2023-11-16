@@ -32,7 +32,6 @@ os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 #game loop
 run = True
-
 while run:
     #draw scrolling background
     for i in range(0, tiles):
